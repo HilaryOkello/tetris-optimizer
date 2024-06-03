@@ -105,7 +105,7 @@ func canPlaceTetromino(square [][]string, tetromino Tetromino, x, y int) bool {
 	for i := 0; i < len(tetromino.Shape); i++ {
 		for j := 0; j < len(tetromino.Shape[i]); j++ {
 			if tetromino.Shape[i][j] == "#" {
-				if (x+i) >= size || (y+i) >= size || square[i+x][i+y] == "#" {
+				if (x+i) >= size || (y+i) >= size || square[i+x][i+y] != "." {
 					return false
 				}
 			}
