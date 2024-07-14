@@ -144,13 +144,11 @@ func placeTetrominoes(square [][]string, tetrominoes []Tetromino) {
 	index := 0
 	for x := range square {
 		for y := range square[x] {
-			if canPlaceTetromino(square, tetrominoes[0], x, y) {
-				placeTetromino(square, tetrominoes[0], x, y)
+			if canPlaceTetromino(square, tetrominoes[index], x, y) {
+				placeTetromino(square, tetrominoes[index], x, y)
 				index++
-				break
 			}
 		}
-		break
 	}
 }
 
