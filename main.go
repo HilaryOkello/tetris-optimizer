@@ -6,14 +6,19 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 type Tetromino struct {
-	Index int
-	Shape []string
+	Index     int
+	Shape     []string
+	MinRow    int
+	MinCol    int
+	Positions [][2]int
 }
 
 func main() {
+	t := time.Now()
 	if len(os.Args) != 2 {
 		fmt.Println("Usage: go run . sample.txt | cat -e")
 		return
@@ -27,9 +32,9 @@ func main() {
 		fmt.Println("ERROR")
 		return
 	}
-	fmt.Println(tetrominoes)
 	square := MakeSquare(tetrominoes)
 	printTetrominoes(square)
+	fmt.Println(time.Since(t))
 }
 
 func ReadTetrominoesFile() ([]Tetromino, error) {
@@ -59,10 +64,8 @@ func ReadTetrominoesFile() ([]Tetromino, error) {
 			count++
 			tetLines = append(tetLines, line)
 			if count == 4 {
-				tetromino := Tetromino{
-					Index: len(tetrominoes),
-					Shape: tetLines,
-				}
+				tetromino := createTetromino(tetLines, len(tetrominoes))
+				fmt.Println(tetromino.Positions)
 				tetrominoes = append(tetrominoes, tetromino)
 				tetLines = []string{}
 				count = 0
@@ -76,6 +79,39 @@ func ReadTetrominoesFile() ([]Tetromino, error) {
 		return nil, fmt.Errorf("ERROR")
 	}
 	return tetrominoes, nil
+}
+
+func createTetromino(tetLines []string, index int) Tetromino {
+	minRow, minCol := 3, 3
+	var positions [][2]int
+
+	for row, line := range tetLines {
+		for col, char := range line {
+			if char == '#' {
+				if row < minRow {
+					minRow = row
+				}
+				if col < minCol {
+					minCol = col
+				}
+				positions = append(positions, [2]int{row, col})
+			}
+		}
+	}
+
+	// Adjust positions relative to minRow and minCol
+	for i := range positions {
+		positions[i][0] -= minRow
+		positions[i][1] -= minCol
+	}
+
+	return Tetromino{
+		Index:     index,
+		Shape:     tetLines,
+		MinRow:    minRow,
+		MinCol:    minCol,
+		Positions: positions,
+	}
 }
 
 func AreTetrominoesValid(tets []Tetromino) bool {
@@ -140,7 +176,6 @@ func MakeSquare(t []Tetromino) [][]string {
 				square[i][j] = "."
 			}
 		}
-
 		// Try to place all tetrominoes
 		if placeTetrominoes(square, t, 0) {
 			return square
@@ -157,75 +192,43 @@ func placeTetrominoes(square [][]string, tetrominoes []Tetromino, index int) boo
 	}
 	for x := 0; x < len(square); x++ {
 		for y := 0; y < len(square[x]); y++ {
-			fmt.Printf("Trying to place Tet %d\n", index)
-			if canPlaceTetromino(square, tetrominoes[index], x, y) {
+			if square[x][y] != "." {
+				continue
+			}
+			if canPlace := canPlaceTetromino(square, tetrominoes[index], x, y); canPlace {
 				placeTetromino(square, tetrominoes[index], x, y)
 				if placeTetrominoes(square, tetrominoes, index+1) {
-					fmt.Printf("Successfuly placed Tet %d\n", index)
 					return true
 				}
 				removeTetromino(square, tetrominoes[index], x, y)
 			}
 		}
 	}
-	fmt.Printf("Failed to place Tet %d\n", index)
 	return false
 }
 
 func canPlaceTetromino(square [][]string, tetromino Tetromino, x, y int) bool {
-	minRow, minCol := getTetrominoOffset(tetromino)
-	for row, line := range tetromino.Shape {
-		for col, char := range line {
-			if char == '#' {
-				newRow, newCol := x+(row-minRow), y+(col-minCol)
-				if newRow >= len(square) || newCol >= len(square) || square[newRow][newCol] != "." {
-					return false
-				}
-			}
+	for _, pos := range tetromino.Positions {
+		newRow, newCol := x+pos[0], y+pos[1]
+		if newRow < 0 || newCol < 0 || newRow >= len(square) || newCol >= len(square) || square[newRow][newCol] != "." {
+			return false
 		}
 	}
 	return true
 }
 
 func placeTetromino(square [][]string, tetromino Tetromino, x, y int) {
-	minRow, minCol := getTetrominoOffset(tetromino)
-	for row, line := range tetromino.Shape {
-		for col, char := range line {
-			if char == '#' {
-				newRow, newCol := x+(row-minRow), y+(col-minCol)
-				square[newRow][newCol] = string(rune('A' + tetromino.Index))
-			}
-		}
+	for _, pos := range tetromino.Positions {
+		newRow, newCol := x+pos[0], y+pos[1]
+		square[newRow][newCol] = string(rune('A' + tetromino.Index))
 	}
 }
 
 func removeTetromino(square [][]string, tetromino Tetromino, x, y int) {
-	minRow, minCol := getTetrominoOffset(tetromino)
-	for row, line := range tetromino.Shape {
-		for col, char := range line {
-			if char == '#' {
-				newRow, newCol := x+(row-minRow), y+(col-minCol)
-				square[newRow][newCol] = "."
-			}
-		}
+	for _, pos := range tetromino.Positions {
+		newRow, newCol := x+pos[0], y+pos[1]
+		square[newRow][newCol] = "."
 	}
-}
-
-func getTetrominoOffset(tetromino Tetromino) (int, int) {
-	minRow, minCol := 3, 3
-	for row, line := range tetromino.Shape {
-		for col, char := range line {
-			if char == '#' {
-				if row < minRow {
-					minRow = row
-				}
-				if col < minCol {
-					minCol = col
-				}
-			}
-		}
-	}
-	return minRow, minCol
 }
 
 func printTetrominoes(square [][]string) {
