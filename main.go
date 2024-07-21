@@ -65,7 +65,6 @@ func ReadTetrominoesFile() ([]Tetromino, error) {
 			tetLines = append(tetLines, line)
 			if count == 4 {
 				tetromino := createTetromino(tetLines, len(tetrominoes))
-				fmt.Println(tetromino.Positions)
 				tetrominoes = append(tetrominoes, tetromino)
 				tetLines = []string{}
 				count = 0
@@ -191,12 +190,9 @@ func placeTetrominoes(square [][]string, tetrominoes []Tetromino, index int) boo
 		return true
 	}
 	for x := 0; x < len(square); x++ {
-		for y := 0; y < len(square[x]); y++ {
-			if square[x][y] != "." {
-				continue
-			}
-			if canPlace := canPlaceTetromino(square, tetrominoes[index], x, y); canPlace {
-				placeTetromino(square, tetrominoes[index], x, y)
+		for y := 0; y < len(square); y++ {
+			if canPlaceTetromino(square, tetrominoes[index], x, y) {
+				placeTetromino(square, tetrominoes[index], x, y, index)
 				if placeTetrominoes(square, tetrominoes, index+1) {
 					return true
 				}
@@ -209,25 +205,25 @@ func placeTetrominoes(square [][]string, tetrominoes []Tetromino, index int) boo
 
 func canPlaceTetromino(square [][]string, tetromino Tetromino, x, y int) bool {
 	for _, pos := range tetromino.Positions {
-		newRow, newCol := x+pos[0], y+pos[1]
-		if newRow < 0 || newCol < 0 || newRow >= len(square) || newCol >= len(square) || square[newRow][newCol] != "." {
+		newX, newY := x+pos[0], y+pos[1]
+		if newX >= len(square) || newY >= len(square) || square[newX][newY] != "." {
 			return false
 		}
 	}
 	return true
 }
 
-func placeTetromino(square [][]string, tetromino Tetromino, x, y int) {
+func placeTetromino(square [][]string, tetromino Tetromino, x, y, index int) {
 	for _, pos := range tetromino.Positions {
-		newRow, newCol := x+pos[0], y+pos[1]
-		square[newRow][newCol] = string(rune('A' + tetromino.Index))
+		newX, newY := x+pos[0], y+pos[1]
+		square[newX][newY] = string(rune('A' + index))
 	}
 }
 
 func removeTetromino(square [][]string, tetromino Tetromino, x, y int) {
 	for _, pos := range tetromino.Positions {
-		newRow, newCol := x+pos[0], y+pos[1]
-		square[newRow][newCol] = "."
+		newX, newY := x+pos[0], y+pos[1]
+		square[newX][newY] = "."
 	}
 }
 
